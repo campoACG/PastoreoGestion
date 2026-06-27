@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#2d5a27">
+<title>PastoreoGestion</title>
+<style>
+  /* ── TOKENS ──────────────────────────────────────────────── */
+  :root {
+    --green-dark:   #1e4020;
+    --green-main:   #2d5a27;
+    --green-light:  #e8f5e4;
+    --green-text:   #1a3a16;
+    --amber-bg:     #fff3e0;
+    --amber-text:   #8a4500;
+    --blue-bg:      #e8f0fb;
+    --blue-text:    #1a3d7a;
+    --red-bg:       #fdecea;
+    --red-text:     #8b1a1a;
+    --surface:      #f4f4f0;
+    --card:         #ffffff;
+    --border:       #e0dfd8;
+    --border-strong:#c8c7c0;
+    --text-primary: #1a1a18;
+    --text-secondary:#666660;
+    --text-muted:   #9e9e98;
+    --radius-sm:    8px;
+    --radius-md:    12px;
+    --radius-lg:    16px;
+    --nav-h:        64px;
+  }
+
+  /* ── RESET ───────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--surface);
+    color: var(--text-primary);
+    font-size: 16px;
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── LAYOUT ──────────────────────────────────────────────── */
+  #app { display: flex; flex-direction: column; height: 100vh; }
+
+  /* offline banner */
+  #offline-bar {
+    background: var(--amber-bg);
+    border-bottom: 0.5px solid #f0c070;
+    padding: 8px 16px;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--amber-text);
+    font-weight: 500;
+  }
+  #offline-bar.visible { display: flex; }
+  .offline-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #f59e0b; flex-shrink: 0;
+  }
+
+  /* screens */
+  #screens {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
+  .screen {
+    position: absolute; inset: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    display: none;
+    flex-direction: column;
+  }
+  .screen.active { display: flex; }
+
+  /* topbar */
+  .topbar {
+    background: var(--green-main);
+    padding: 16px 16px 14px;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .topbar h1 { font-size: 17px; font-weight: 700; letter-spacing: .2px; }
+  .topbar p  { font-size: 12px; opacity: .75; margin-top: 2px; }
+
+  /* nav */
+  #nav {
+    background: var(--card);
+    border-top: 0.5px solid var(--border);
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    height: var(--nav-h);
+    flex-shrink: 0;
+  }
+  .nav-btn {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 3px; border: none; background: none;
+    cursor: pointer; padding: 0;
+    color: var(--text-muted);
+    font-size: 11px; font-weight: 500;
+    -webkit-tap-highlight-color: transparent;
+    transition: color .15s;
+  }
+  .nav-btn svg { width: 22px; height: 22px; stroke-width: 1.75; }
+  .nav-btn.active { color: var(--green-main); }
+
+  /* ── CARDS ───────────────────────────────────────────────── */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius-md);
+    border: 0.5px solid var(--border);
+  }
+  .section { padding: 12px 14px 0; }
+  .section-title {
+    font-size: 11px; font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    margin-bottom: 8px;
+  }
+
+  /* stat cards */
+  .stat-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px; padding: 12px 14px 0;
+  }
+  .stat-card {
+    background: var(--card);
+    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border);
+    padding: 12px 8px 10px;
+    text-align: center;
+  }
+  .stat-num {
+    font-size: 28px; font-weight: 700; line-height: 1;
+  }
+  .stat-lbl {
+    font-size: 10px; color: var(--text-muted);
+    margin-top: 4px; text-transform: uppercase; letter-spacing: .4px;
+  }
+  .color-green { color: var(--green-main); }
+  .color-amber { color: #b35c00; }
+  .color-blue  { color: #1a4d8a; }
+
+  /* potrero list items */
+  .pot-item {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    padding: 11px 14px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .pot-item:last-child { border-bottom: none; }
+  .pot-name { font-size: 14px; font-weight: 600; }
+  .pot-sub  { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+  .pot-badge {
+    font-size: 11px; font-weight: 600;
+    color: var(--green-text);
+    background: var(--green-light);
+    border-radius: 6px;
+    padding: 4px 8px;
+    white-space: nowrap;
+  }
+
+  /* status badge */
+  .badge {
+    display: inline-block; border-radius: 6px;
+    padding: 3px 8px; font-size: 11px; font-weight: 600;
+  }
+  .badge-green  { background: var(--green-light);  color: var(--green-text); }
+  .badge-amber  { background: var(--amber-bg);      color: var(--amber-text); }
+  .badge-blue   { background: var(--blue-bg);       color: var(--blue-text); }
+  .badge-red    { background: var(--red-bg);        color: var(--red-text); }
+
+  /* ── FORM ────────────────────────────────────────────────── */
+  .field-label {
+    font-size: 11px; font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: .6px;
+    margin-bottom: 6px;
+  }
+  select {
+    width: 100%; appearance: none; -webkit-appearance: none;
+    background: var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;
+    border: 0.5px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: 13px 40px 13px 14px;
+    font-size: 15px; color: var(--text-primary);
+    cursor: pointer;
+  }
+  select:focus { outline: 2px solid var(--green-main); outline-offset: 1px; }
+
+  .field-hint {
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    font-size: 12px;
+    margin-top: 6px;
+  }
+  .hint-green { background: var(--green-light); color: var(--green-text); }
+  .hint-purple { background: #f0ebff; color: #3d1a8a; }
+
+  input[type="number"] {
+    width: 100%;
+    border: 0.5px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: 13px 14px;
+    font-size: 15px; color: var(--text-primary);
+    background: var(--card);
+  }
+  input[type="number"]:focus { outline: 2px solid var(--green-main); outline-offset: 1px; }
+
+  /* ── BUTTONS ─────────────────────────────────────────────── */
+  .btn {
+    display: block; width: 100%;
+    padding: 15px; border-radius: var(--radius-md);
+    font-size: 15px; font-weight: 600;
+    border: none; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: opacity .15s, transform .1s;
+  }
+  .btn:active { transform: scale(.98); opacity: .9; }
+  .btn-primary { background: var(--green-main); color: #fff; }
+  .btn-secondary {
+    background: var(--card); color: var(--text-primary);
+    border: 0.5px solid var(--border-strong);
+  }
+  .btn-danger { background: #c0392b; color: #fff; }
+  .btn:disabled { opacity: .45; pointer-events: none; }
+
+  /* ── RESULTADO ───────────────────────────────────────────── */
+  .result-hero {
+    background: var(--green-main);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    padding: 16px 18px;
+    color: #fff;
+  }
+  .result-hero h2 { font-size: 13px; font-weight: 600; opacity: .85; }
+  .result-days {
+    font-size: 64px; font-weight: 800;
+    line-height: 1; margin-top: 4px;
+    letter-spacing: -2px;
+  }
+  .result-days-lbl { font-size: 14px; opacity: .8; margin-top: 2px; }
+
+  .result-body { padding: 0 18px 16px; }
+  .result-row {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 0.5px solid var(--border);
+    font-size: 14px;
+  }
+  .result-row:last-child { border-bottom: none; }
+  .result-lbl { color: var(--text-secondary); }
+  .result-val { font-weight: 600; }
+
+  .alert-item {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+  .alert-item:last-child { margin-bottom: 0; }
+  .alert-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+  .alert-info    { background: var(--blue-bg);  color: var(--blue-text); }
+  .alert-warning { background: var(--amber-bg); color: var(--amber-text); }
+  .alert-error   { background: var(--red-bg);   color: var(--red-text); }
+
+  /* ── HISTORIAL ───────────────────────────────────────────── */
+  .hist-item {
+    padding: 12px 14px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .hist-item:last-child { border-bottom: none; }
+  .hist-top { display: flex; justify-content: space-between; align-items: center; }
+  .hist-title { font-size: 14px; font-weight: 600; }
+  .hist-date  { font-size: 11px; color: var(--text-muted); }
+  .hist-sub   { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+
+  /* ── SPINNER ─────────────────────────────────────────────── */
+  .spinner-wrap {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 48px 0; gap: 14px;
+    color: var(--text-secondary); font-size: 14px;
+  }
+  .spinner {
+    width: 32px; height: 32px;
+    border: 3px solid var(--border);
+    border-top-color: var(--green-main);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── EMPTY STATE ─────────────────────────────────────────── */
+  .empty {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 48px 24px; text-align: center;
+    color: var(--text-secondary);
+    gap: 10px;
+  }
+  .empty svg { opacity: .35; }
+  .empty p { font-size: 14px; line-height: 1.6; }
+
+  /* ── UTILIDADES ──────────────────────────────────────────── */
+  .mt8  { margin-top: 8px; }
+  .mt12 { margin-top: 12px; }
+  .mt14 { margin-top: 14px; }
+  .mt16 { margin-top: 16px; }
+  .pb80 { padding-bottom: 80px; }
+  .px14 { padding-left: 14px; padding-right: 14px; }
+  .py12 { padding-top: 12px; padding-bottom: 12px; }
+  .gap8 { gap: 8px; }
+  .flex { display: flex; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- OFFLINE BAR -->
+  <div id="offline-bar">
+    <div class="offline-dot"></div>
+    <span id="offline-msg">Sin conexión — mostrando datos guardados</span>
+  </div>
+
+  <!-- SCREENS -->
+  <div id="screens">
+
+    <!-- ══ PANTALLA: INICIO ══════════════════════════════════ -->
+    <div class="screen active" id="screen-home">
+      <div class="topbar">
+        <h1>PastoreoGestion</h1>
+        <p id="home-est-label">Cargando...</p>
+      </div>
+      <div id="home-content" style="flex:1;overflow-y:auto;padding-bottom:80px">
+        <div class="spinner-wrap"><div class="spinner"></div><span>Cargando estado...</span></div>
+      </div>
+    </div>
+
+    <!-- ══ PANTALLA: CALCULAR ════════════════════════════════ -->
+    <div class="screen" id="screen-calc">
+      <div class="topbar">
+        <h1>Nuevo pastoreo</h1>
+        <p>Calculá días y carga animal</p>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding-bottom:80px">
+
+        <div class="section mt12">
+          <div class="field-label">Potrero</div>
+          <select id="sel-potrero" onchange="onPotreroChange()">
+            <option value="">Seleccioná un potrero...</option>
+          </select>
+          <div id="hint-potrero" class="field-hint hint-green" style="display:none"></div>
+        </div>
+
+        <div class="section mt14">
+          <div class="field-label">Rodeo</div>
+          <select id="sel-rodeo" onchange="onRodeoChange()">
+            <option value="">Seleccioná un rodeo...</option>
+          </select>
+          <div id="hint-rodeo" class="field-hint hint-purple" style="display:none"></div>
+        </div>
+
+        <div class="section mt14">
+          <div class="field-label">Días objetivo <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-muted)">(opcional)</span></div>
+          <input type="number" id="inp-dias" min="1" max="90" placeholder="Ej: 7" inputmode="numeric">
+        </div>
+
+        <div class="px14 mt16">
+          <button class="btn btn-primary" id="btn-calcular" onclick="calcular()" disabled>
+            Calcular pastoreo
+          </button>
+        </div>
+
+        <div id="calc-error" class="px14 mt12" style="display:none">
+          <div class="alert-item alert-error">
+            <span class="alert-icon">⚠</span>
+            <span id="calc-error-msg"></span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══ PANTALLA: RESULTADO ═══════════════════════════════ -->
+    <div class="screen" id="screen-result">
+      <div class="topbar">
+        <h1>Resultado</h1>
+        <p id="result-subtitle">—</p>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding-bottom:80px">
+
+        <div class="px14 mt12">
+          <div class="card">
+            <div class="result-hero">
+              <h2 id="result-hero-label">Días de pastoreo</h2>
+              <div class="result-days" id="result-days">—</div>
+              <div class="result-days-lbl" id="result-days-lbl">días posibles</div>
+            </div>
+            <div class="result-body">
+              <div class="result-row">
+                <span class="result-lbl">Oferta total</span>
+                <span class="result-val color-green" id="r-oferta">—</span>
+              </div>
+              <div class="result-row">
+                <span class="result-lbl">Demanda diaria</span>
+                <span class="result-val" id="r-demanda">—</span>
+              </div>
+              <div class="result-row">
+                <span class="result-lbl">Carga máxima</span>
+                <span class="result-val" id="r-carga">—</span>
+              </div>
+              <div class="result-row">
+                <span class="result-lbl">Entrada</span>
+                <span class="result-val" id="r-entrada">—</span>
+              </div>
+              <div class="result-row">
+                <span class="result-lbl">Salida estimada</span>
+                <span class="result-val" id="r-salida">—</span>
+              </div>
+              <div class="result-row">
+                <span class="result-lbl">Retorno al potrero</span>
+                <span class="result-val color-blue" id="r-retorno">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section mt12" id="alerts-section">
+          <div class="section-title">Alertas</div>
+          <div id="alerts-list"></div>
+        </div>
+
+        <div class="px14 mt14 grid2">
+          <button class="btn btn-primary" id="btn-registrar" onclick="registrarIngreso()">
+            Registrar ingreso
+          </button>
+          <button class="btn btn-secondary" onclick="navTo('calc')">
+            Volver
+          </button>
+        </div>
+        <div id="registro-feedback" class="px14 mt12" style="display:none"></div>
+
+      </div>
+    </div>
+
+    <!-- ══ PANTALLA: HISTORIAL ═══════════════════════════════ -->
+    <div class="screen" id="screen-hist">
+      <div class="topbar">
+        <h1>Historial</h1>
+        <p>Pastoreos registrados</p>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding-bottom:80px">
+        <div id="hist-content" class="px14" style="padding-top:12px">
+          <div class="spinner-wrap"><div class="spinner"></div><span>Cargando historial...</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /screens -->
+
+  <!-- NAV BAR -->
+  <nav id="nav">
+    <button class="nav-btn active" id="nav-home" onclick="navTo('home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Inicio
+    </button>
+    <button class="nav-btn" id="nav-calc" onclick="navTo('calc')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="12" y2="15"/></svg>
+      Calcular
+    </button>
+    <button class="nav-btn" id="nav-hist" onclick="navTo('hist')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Historial
+    </button>
+  </nav>
+
+</div><!-- /app -->
+
+<script>
+// ── CONFIGURACIÓN ─────────────────────────────────────────────
+// ⚠️  REEMPLAZÁ estos dos valores con los tuyos antes de publicar
+const API_URL   = "TU_URL_DE_APPS_SCRIPT";
+const API_TOKEN = "TU_TOKEN";
+
+// ── ESTADO GLOBAL ─────────────────────────────────────────────
+const state = {
+  online:    navigator.onLine,
+  potreros:  [],
+  rodeos:    [],
+  ultimoResultado: null,
+  ultimoCalculo:   null,
+};
+
+// ── CACHE LOCAL (IndexedDB simple via localStorage por ahora) ──
+const cache = {
+  set(k, v)  { try { localStorage.setItem("pg_" + k, JSON.stringify(v)); } catch(e){} },
+  get(k)     { try { const v = localStorage.getItem("pg_" + k); return v ? JSON.parse(v) : null; } catch(e){ return null; } },
+  del(k)     { try { localStorage.removeItem("pg_" + k); } catch(e){} },
+};
+
+// ── NAVEGACIÓN ────────────────────────────────────────────────
+function navTo(screen) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+  document.getElementById("screen-" + screen).classList.add("active");
+  document.getElementById("nav-" + screen).classList.add("active");
+
+  if (screen === "home")  renderHome();
+  if (screen === "calc")  initCalc();
+  if (screen === "hist")  renderHistorial();
+}
+
+// ── ONLINE / OFFLINE ──────────────────────────────────────────
+function setOnlineState(online) {
+  state.online = online;
+  const bar = document.getElementById("offline-bar");
+  if (!online) bar.classList.add("visible");
+  else         bar.classList.remove("visible");
+}
+window.addEventListener("online",  () => setOnlineState(true));
+window.addEventListener("offline", () => setOnlineState(false));
+
+// ── API ───────────────────────────────────────────────────────
+async function apiFetch(params) {
+  const url = new URL(API_URL);
+  url.searchParams.set("token", API_TOKEN);
+  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+
+  const res  = await fetch(url.toString(), { redirect: "follow" });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || "Error desconocido");
+  return json.data;
+}
+
+// ── PANTALLA HOME ─────────────────────────────────────────────
+async function renderHome() {
+  const content = document.getElementById("home-content");
+
+  // Intentar desde API, caer a cache si no hay conexión
+  let estado = null;
+  let potreros = null;
+
+  if (state.online) {
+    try {
+      [estado, potreros] = await Promise.all([
+        apiFetch({ action: "estado" }),
+        apiFetch({ action: "potreros" }),
+      ]);
+      cache.set("estado",   estado);
+      cache.set("potreros", potreros);
+      state.potreros = potreros.potreros || [];
+    } catch(e) {
+      estado   = cache.get("estado");
+      potreros = cache.get("potreros");
+      if (potreros) state.potreros = potreros.potreros || [];
+      setOnlineState(false);
+      document.getElementById("offline-msg").textContent =
+        "Error de conexión — mostrando datos guardados";
+    }
+  } else {
+    estado   = cache.get("estado");
+    potreros = cache.get("potreros");
+    if (potreros) state.potreros = potreros.potreros || [];
+  }
+
+  if (!estado) {
+    content.innerHTML = `<div class="empty">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <p>No se pudo cargar el estado.<br>Verificá la URL y el token en api.js.</p>
+    </div>`;
+    return;
+  }
+
+  document.getElementById("home-est-label").textContent =
+    (estado.nombre_est || estado.est_id_activo || "") + " · " + (estado.est_id_activo || "");
+
+  const disponibles = (state.potreros || []).filter(p => p.estado === "disponible");
+
+  content.innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-num color-green">${estado.potreros?.disponible ?? 0}</div>
+        <div class="stat-lbl">Libres</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num color-amber">${estado.potreros?.ocupado ?? 0}</div>
+        <div class="stat-lbl">Ocupados</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num color-blue">${estado.potreros?.descanso ?? 0}</div>
+        <div class="stat-lbl">Descanso</div>
+      </div>
+    </div>
+
+    <div class="section mt14">
+      <div class="section-title">Potreros disponibles</div>
+      <div class="card">
+        ${disponibles.length === 0
+          ? `<div class="empty py12"><p>Ningún potrero disponible en este momento.</p></div>`
+          : disponibles.map(p => `
+              <div class="pot-item">
+                <div>
+                  <div class="pot-name">${p.nombre}</div>
+                  <div class="pot-sub">${p.ha} ha · ${p.tipo_recurso}</div>
+                </div>
+                <div class="pot-badge">${(p.kg_ms_ha || 0).toLocaleString("es-AR")} kg/ha</div>
+              </div>`).join("")
+        }
+      </div>
+    </div>
+
+    <div class="section mt14" style="padding-bottom:16px">
+      <div class="section-title">Acceso rápido</div>
+      <button class="btn btn-primary" onclick="navTo('calc')">
+        Calcular nuevo pastoreo
+      </button>
+    </div>
+  `;
+}
+
+// ── PANTALLA CALCULAR ─────────────────────────────────────────
+async function initCalc() {
+  // Cargar potreros y rodeos si no están en estado
+  if (!state.potreros.length || !state.rodeos.length) {
+    try {
+      const [dp, dr] = await Promise.all([
+        apiFetch({ action: "potreros" }),
+        apiFetch({ action: "rodeos" }),
+      ]);
+      state.potreros = dp.potreros || [];
+      state.rodeos   = dr.rodeos   || [];
+      cache.set("potreros", dp);
+      cache.set("rodeos",   dr);
+    } catch(e) {
+      const cp = cache.get("potreros");
+      const cr = cache.get("rodeos");
+      if (cp) state.potreros = cp.potreros || [];
+      if (cr) state.rodeos   = cr.rodeos   || [];
+    }
+  }
+
+  // Poblar select potreros
+  const selP = document.getElementById("sel-potrero");
+  selP.innerHTML = `<option value="">Seleccioná un potrero...</option>` +
+    state.potreros.map(p =>
+      `<option value="${p.potrero_id}">${p.nombre} — ${p.ha} ha [${p.estado}]</option>`
+    ).join("");
+
+  // Poblar select rodeos
+  const selR = document.getElementById("sel-rodeo");
+  selR.innerHTML = `<option value="">Seleccioná un rodeo...</option>` +
+    state.rodeos.map(r =>
+      `<option value="${r.rodeo_id}">${r.nombre} — ${r.cabezas} cab.</option>`
+    ).join("");
+
+  document.getElementById("hint-potrero").style.display = "none";
+  document.getElementById("hint-rodeo").style.display   = "none";
+  document.getElementById("calc-error").style.display   = "none";
+  document.getElementById("btn-calcular").disabled      = true;
+}
+
+function onPotreroChange() {
+  const id  = document.getElementById("sel-potrero").value;
+  const pot = state.potreros.find(p => p.potrero_id === id);
+  const hint = document.getElementById("hint-potrero");
+
+  if (pot) {
+    const estados = { disponible: "Disponible", ocupado: "Ocupado", descanso: "En descanso" };
+    hint.textContent =
+      `${estados[pot.estado] || pot.estado} · ${(pot.kg_ms_ha||0).toLocaleString("es-AR")} kg MS/ha · ${pot.aprovec_pct}% aprovechamiento`;
+    hint.style.display = "block";
+  } else {
+    hint.style.display = "none";
+  }
+  checkCalcReady();
+}
+
+function onRodeoChange() {
+  const id   = document.getElementById("sel-rodeo").value;
+  const rod  = state.rodeos.find(r => r.rodeo_id === id);
+  const hint = document.getElementById("hint-rodeo");
+
+  if (rod) {
+    const demanda = Math.round(rod.cabezas * rod.peso_prom_kg * (rod.consumo_pct_pv / 100));
+    hint.textContent =
+      `${rod.categoria} · ${rod.peso_prom_kg} kg PV · ${rod.consumo_pct_pv}% PV/día · demanda ${demanda.toLocaleString("es-AR")} kg/día`;
+    hint.style.display = "block";
+  } else {
+    hint.style.display = "none";
+  }
+  checkCalcReady();
+}
+
+function checkCalcReady() {
+  const ok = document.getElementById("sel-potrero").value &&
+             document.getElementById("sel-rodeo").value;
+  document.getElementById("btn-calcular").disabled = !ok;
+}
+
+async function calcular() {
+  const potreroId = document.getElementById("sel-potrero").value;
+  const rodeoId   = document.getElementById("sel-rodeo").value;
+  const dias      = document.getElementById("inp-dias").value;
+  const errDiv    = document.getElementById("calc-error");
+
+  errDiv.style.display = "none";
+  const btn = document.getElementById("btn-calcular");
+  btn.textContent = "Calculando...";
+  btn.disabled = true;
+
+  try {
+    const params = { action: "calcular", potrero_id: potreroId, rodeo_id: rodeoId };
+    if (dias) params.dias = dias;
+
+    const data = await apiFetch(params);
+    state.ultimoResultado = data;
+
+    // Guardar en historial local
+    const hist = cache.get("historial") || [];
+    hist.unshift({
+      ...data,
+      timestamp: new Date().toISOString(),
+    });
+    cache.set("historial", hist.slice(0, 50)); // guardar últimos 50
+
+    mostrarResultado(data);
+    navTo("result");
+
+  } catch(e) {
+    errDiv.style.display = "block";
+    document.getElementById("calc-error-msg").textContent = e.message;
+  } finally {
+    btn.textContent = "Calcular pastoreo";
+    btn.disabled = false;
+    checkCalcReady();
+  }
+}
+
+// ── PANTALLA RESULTADO ────────────────────────────────────────
+function mostrarResultado(data) {
+  const c = data.calculo;
+  const f = data.fechas;
+
+  document.getElementById("result-subtitle").textContent =
+    `${data.potrero.nombre} · ${data.rodeo.nombre}`;
+
+  document.getElementById("result-days").textContent    = c.diasPastoreoFinal;
+  document.getElementById("result-days-lbl").textContent =
+    c.diasPastoreoFinal !== c.diasPastoreoPosibles
+      ? `días (de ${c.diasPastoreoPosibles} posibles)`
+      : "días posibles";
+
+  document.getElementById("r-oferta").textContent  =
+    c.ofertaTotalKgMs.toLocaleString("es-AR") + " kg MS";
+  document.getElementById("r-demanda").textContent =
+    c.demandaDiariaKgMs.toLocaleString("es-AR") + " kg MS/día";
+  document.getElementById("r-carga").textContent   =
+    c.cargaMaximaCabezas.toLocaleString("es-AR") + " cabezas";
+  document.getElementById("r-entrada").textContent = f.entrada;
+  document.getElementById("r-salida").textContent  = f.salidaEst;
+  document.getElementById("r-retorno").textContent = f.retornoPrev;
+
+  // Alertas
+  const alertMap = { info: "alert-info", warning: "alert-warning", error: "alert-error" };
+  const iconMap  = { info: "ℹ", warning: "⚠", error: "✕" };
+  const lista = document.getElementById("alerts-list");
+  lista.innerHTML = (data.alertas || []).map(a => `
+    <div class="alert-item ${alertMap[a.nivel] || "alert-info"}">
+      <span class="alert-icon">${iconMap[a.nivel] || "ℹ"}</span>
+      <span>${a.mensaje}</span>
+    </div>`).join("");
+
+  document.getElementById("registro-feedback").style.display = "none";
+  document.getElementById("btn-registrar").disabled = false;
+  document.getElementById("btn-registrar").textContent = "Registrar ingreso";
+}
+
+async function registrarIngreso() {
+  if (!state.ultimoResultado) return;
+  const { potrero, rodeo } = state.ultimoResultado;
+  const btn = document.getElementById("btn-registrar");
+  const fb  = document.getElementById("registro-feedback");
+
+  btn.textContent = "Registrando...";
+  btn.disabled = true;
+
+  try {
+    await apiFetch({
+      action:      "registrar_ingreso",
+      potrero_id:  potrero.id,
+      rodeo_id:    rodeo.id,
+    });
+
+    fb.innerHTML = `<div class="alert-item alert-info">
+      <span class="alert-icon">✓</span>
+      <span>Ingreso registrado. ${potrero.nombre} → ocupado.</span>
+    </div>`;
+    fb.style.display = "block";
+    btn.textContent = "Ingreso registrado";
+
+  } catch(e) {
+    fb.innerHTML = `<div class="alert-item alert-error">
+      <span class="alert-icon">⚠</span>
+      <span>${e.message}</span>
+    </div>`;
+    fb.style.display = "block";
+    btn.disabled = false;
+    btn.textContent = "Registrar ingreso";
+  }
+}
+
+// ── PANTALLA HISTORIAL ────────────────────────────────────────
+function renderHistorial() {
+  const content = document.getElementById("hist-content");
+  const hist    = cache.get("historial") || [];
+
+  if (!hist.length) {
+    content.innerHTML = `<div class="empty">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <p>Todavía no hay cálculos registrados en este dispositivo.</p>
+    </div>`;
+    return;
+  }
+
+  content.innerHTML = `<div class="card" style="margin-bottom:14px">` +
+    hist.map(h => {
+      const c    = h.calculo || {};
+      const fecha = h.timestamp
+        ? new Date(h.timestamp).toLocaleDateString("es-AR", { day:"2-digit", month:"2-digit", year:"numeric" })
+        : "—";
+      return `<div class="hist-item">
+        <div class="hist-top">
+          <span class="hist-title">${h.potrero?.nombre || "—"}</span>
+          <span class="hist-date">${fecha}</span>
+        </div>
+        <div class="hist-sub">
+          ${h.rodeo?.nombre || "—"} ·
+          <strong>${c.diasPastoreoFinal ?? "—"} días</strong> ·
+          ${(c.ofertaTotalKgMs || 0).toLocaleString("es-AR")} kg MS
+        </div>
+      </div>`;
+    }).join("") + `</div>`;
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+setOnlineState(navigator.onLine);
+renderHome();
+</script>
+</body>
+</html>
